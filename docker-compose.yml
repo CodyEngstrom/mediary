@@ -3,15 +3,15 @@ services:
     image: postgres:latest
     container_name: pg-mediary
     ports:
-      - "5433:5432"
+      - "${DB_PORT}:5432"
     environment:
-      POSTGRES_DB: devdb
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U devuser -d devdb"]
+      test: ["CMD-SHELL", "pg_isready -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 10

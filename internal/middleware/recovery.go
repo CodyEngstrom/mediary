@@ -2,8 +2,12 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"runtime/debug"
 
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -16,15 +20,28 @@ func RecoveryMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 
 					traceID, _ := r.Context().Value(TraceContextKey).(string)
 
-					logger.Error("panic occurred",
-						zap.Any("error", rec),
-						zap.String("method", r.Method),
+					var err error
+					switch x := rec.(type) {
+					case error:
+						err = x
+					case string:
+						err = errors.New(x)
+					default:
+						err = fmt.Errorf("unknown panic: %v", x)
+					}
+
+					logger.Error("panic recovered",
+						zap.Any("panic", rec),          // raw panic value
+						zap.Error(err),                 // normalized error
+						zap.String("method", r.Method), // request context
 						zap.String("path", r.URL.Path),
 						zap.String("trace_id", traceID),
+						zap.ByteString("stacktrace", debug.Stack()), // stacktrace
 					)
 
 					if span := trace.SpanFromContext(r.Context()); span != nil {
-						span.RecordError(rec.(error))
+						span.RecordError(err)
+						span.SetStatus(codes.Error, err.Error())
 					}
 
 					w.Header().Set("Content-Type", "application/json")
@@ -33,7 +50,6 @@ func RecoveryMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 						"error":    "internal server error",
 						"trace_id": traceID,
 					})
-					// http.Error(w, "internal server error", http.StatusInternalServerError)
 				}
 			}()
 			next.ServeHTTP(w, r)
