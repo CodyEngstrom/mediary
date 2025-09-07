@@ -1,0 +1,5 @@
+docker exec -it pg-mediary psql -U devuser -d devdb -c "\dn"
+docker exec -it pg-mediary psql -U devuser -d devdb -c "\dt"
+docker exec -it pg-mediary psql -U devuser -d devdb -c "\dT"
+@REM docker exec -it pg-mediary psql -U devuser -d devdb -c "\df public.*"
+docker exec -it pg-mediary psql -U devuser -d devdb -c "\d media"

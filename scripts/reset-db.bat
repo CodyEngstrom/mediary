@@ -1,0 +1,1 @@
+docker exec -it pg-mediary psql -U devuser -d devdb -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
